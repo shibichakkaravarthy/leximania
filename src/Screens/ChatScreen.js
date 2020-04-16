@@ -29,6 +29,7 @@ const ChatScreen = ({ navigation, route }) => {
 	const [hiddenWord, setWord] = useState('')
 	const [ showAlert, setShowAlert ] = useState(false)
 	const [shit, setShit] = useState(0)
+	const [showUsers, setUserScrollRender] = useState(true)
 
 	const scrollView = useRef(null)
 
@@ -76,7 +77,7 @@ const ChatScreen = ({ navigation, route }) => {
 		socket.on('question', ({ word }) => {
 			setWord(word)
 			setTurn(true)
-			setShowAlert({ show: true, title: 'Your Turn Now', message: `You have to represent the word "${word}"`, confirm: 'OK', onConfirm: () => {}  })
+			setShowAlert({ show: true, title: 'Your Turn Now', message: `You have to represent the word "${word}"`, confirm: 'OK' })
 
 		})
 	}, [hiddenWord])
@@ -84,6 +85,10 @@ const ChatScreen = ({ navigation, route }) => {
 	useEffect(() => {
 		socket.on('time', time => {
 			setTime(time.seconds)
+		})
+
+		socket.on('stopTimer', () => {
+			setTime(0)
 		})
 	}, [time])
 
@@ -103,10 +108,18 @@ const ChatScreen = ({ navigation, route }) => {
 	const startGame = () => {
 		socket.emit('ready', { duration: 600, room })
 	}
+
+	const startTimer = () => {
+		socket.emit('start', { room, duration: 60})
+		setShowAlert({ show: false, message: '' })
+	}
 	
 	return (
 		<SafeAreaView style={[ LiteStyles.flex1 ]} >
 			<View>
+			{
+				(showUsers)
+				?
 				<ScrollView horizontal style={{height: 110}} >
 					{
 						(users.length)
@@ -124,6 +137,9 @@ const ChatScreen = ({ navigation, route }) => {
 						null
 					}
 				</ScrollView>
+				:
+				null
+			}
 			</View>
 			<View>
 				{
@@ -147,13 +163,13 @@ const ChatScreen = ({ navigation, route }) => {
 					<Text>Start Game</Text>
 				</TouchableOpacity>
 				<Item rounded >
-					<Input placeholder="Type your Word here" onChangeText={text => setMessage(text)} value={message} />
+					<Input placeholder="Type your Word here" onChangeText={text => setMessage(text)} value={message} onFocus={() => { setUserScrollRender(false) }} onBlur={() => { setUserScrollRender(true) }} />
 					<TouchableOpacity onPress={() => sendMessage()} >
 						<Icon name='md-send' type='Ionicons' />
 					</TouchableOpacity>
 				</Item>
 			</View>
-			<AwesomeAlert show={showAlert.show} showProgress={false} title={showAlert.title} message={showAlert.message} closeOnTouchOutside={true} closeOnHardwareBackPress={false} showConfirmButton={true} confirmText={showAlert.confirm} confirmButtonColor="#DD6B55" onCancelPressed={() => {}} onConfirmPressed={() => { setShowAlert({ show: false, message: '' }) }} />
+			<AwesomeAlert show={showAlert.show} showProgress={false} title={showAlert.title} message={showAlert.message} closeOnTouchOutside={false} closeOnHardwareBackPress={false} showConfirmButton={true} confirmText={showAlert.confirm} confirmButtonColor="#DD6B55" onCancelPressed={() => {}} onConfirmPressed={() => { startTimer() }} />
 		</SafeAreaView>
 		)
 }
